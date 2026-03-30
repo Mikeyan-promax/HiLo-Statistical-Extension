@@ -1,3 +1,5 @@
+[🇨🇳 中文版 (Chinese Version)](README_cn.md) | [🇬🇧 English Version](README.md)
+
 # HiLo: Statistical Prior Extension for Domain Shift Robustness (ICLR 2025)
 
 This repository is an extended, device-agnostic fork of the official **HiLo** repository (ICLR 2025) by Prof. Kai Han's Visual AI Lab at HKU.
@@ -6,17 +8,49 @@ Original Repo: [https://github.com/Visual-AI/HiLo](https://github.com/Visual-AI/
 
 ---
 
-## 🎯 What's New? (Core Improvements)
-The original HiLo framework elegantly disentangles semantic and domain features for Generalized Category Discovery (GCD). However, when facing severe Out-of-Distribution (OOD) samples in target domains (e.g., `Real` $\to$ `Sketch`), the standard Softmax classifier used for pseudo-labeling often suffers from "overconfidence."
+## 💡 Motivation & Mathematical Intuition
 
-To mitigate this, **I have introduced a Statistical Prior Extension based on Evidential Deep Learning (EDL) and Subjective Logic.**
+As a Mathematics and Applied Mathematics student, I deeply appreciate the elegant disentanglement of semantic and domain features in the original HiLo framework for Generalized Category Discovery (GCD). However, from a statistical perspective, when the model faces severe Out-of-Distribution (OOD) samples in target domains (e.g., `Real` $\to$ `Sketch`), the standard Softmax classifier used for pseudo-labeling often suffers from "overconfidence." Softmax forces the output probabilities to sum to 1, even if the model has never seen similar features, leading to unreliable pseudo-labels for novel categories.
 
-### 1. Dirichlet Prior Integration
-Replaced the standard Softmax head in `methods/ours/models/swin_pm.py` with an EDL formulation (`stat_utils.py`). It converts raw logits into Dirichlet concentration parameters ($\alpha$), allowing the model to compute both expected probabilities and a "second-order uncertainty" score.
-### 2. Evidential Loss Penalty
-Integrated a KL-divergence penalty (`edl_loss`) into the clustering loop in `methods/ours/mi_dis_pm.py`. This regularizes the model, penalizing overconfident predictions on unseen novel categories.
-### 3. Bootstrap CI Evaluation
-Added a Bootstrap resampling module in `methods/ours/evaluate.py` to calculate 95% Confidence Intervals (CI), providing rigorous statistical significance testing for All/Old/New categories.
+To mitigate this, **I have introduced a Statistical Prior Extension based on Evidential Deep Learning (EDL) and Subjective Logic.** Instead of outputting point-estimate probabilities, the model now outputs the parameters of a **Dirichlet distribution**, which models the *density of probability assignments*. This allows the model to express "I don't know" (second-order uncertainty) when encountering unfamiliar domain shifts.
+
+---
+
+## 🎯 Core Mathematical Improvements
+
+### 1. Dirichlet Prior Integration (Subjective Logic)
+In standard classification, the network outputs logits $\mathbf{z}$, and probabilities are obtained via Softmax: $\mathbf{p} = \text{Softmax}(\mathbf{z})$.
+In our EDL formulation (`stat_utils.py` and `methods/ours/models/swin_pm.py`), the network outputs evidence $\mathbf{e} \ge 0$ for each of the $K$ classes. We use an activation function (e.g., Softplus) to ensure non-negativity:
+$$ \mathbf{e} = \text{Softplus}(\mathbf{z}) $$
+
+This evidence is then linked to the concentration parameters $\boldsymbol{\alpha}$ of a Dirichlet distribution:
+$$ \boldsymbol{\alpha} = \mathbf{e} + 1 $$
+
+The expected probability for class $k$ is given by:
+$$ \hat{p}_k = \frac{\alpha_k}{S} \quad \text{where} \quad S = \sum_{i=1}^K \alpha_i $$
+
+**Uncertainty Quantification:** The total evidence $S$ inversely relates to the second-order uncertainty $u$:
+$$ u = \frac{K}{S} $$
+When the model sees an OOD sample, the evidence $\mathbf{e}$ is close to $\mathbf{0}$, $\boldsymbol{\alpha} \approx \mathbf{1}$, $S \approx K$, and uncertainty $u \approx 1$ (maximum uncertainty).
+
+### 2. Evidential Loss Penalty (KL Divergence)
+To train the model to output high uncertainty for misclassified or OOD samples, we integrated an Evidential Loss penalty into the clustering loop (`methods/ours/mi_dis_pm.py`). 
+The loss consists of the standard cross-entropy risk integrated over the Dirichlet simplex, plus a Kullback-Leibler (KL) divergence term that shrinks the evidence of incorrect classes to zero:
+
+$$ \mathcal{L}_{EDL} = \sum_{i=1}^N \left[ \sum_{k=1}^K y_{ik} \left( \psi(S_i) - \psi(\alpha_{ik}) \right) + \lambda_{KL} \text{KL}\left[ \text{Dir}(\boldsymbol{\alpha}_i \setminus \tilde{\boldsymbol{\alpha}}_i) \parallel \text{Dir}(\mathbf{1}) \right] \right] $$
+
+where $\psi(\cdot)$ is the digamma function, $\mathbf{y}_i$ is the one-hot (or pseudo) label, and $\tilde{\boldsymbol{\alpha}}_i$ is the Dirichlet parameter after removing the evidence of the target class. This regularizes the model, penalizing overconfident predictions on unseen novel categories.
+
+### 3. Bootstrap Confidence Intervals (CI)
+Point estimates of accuracy can be noisy, especially on novel categories. I added a Bootstrap resampling module (`methods/ours/evaluate.py`) to calculate 95% Confidence Intervals (CI).
+**Algorithm:**
+1. Sample $N$ predictions with replacement from the test set.
+2. Calculate the accuracy for this bootstrap sample.
+3. Repeat $B=1000$ times to build an empirical distribution of accuracies.
+4. Extract the 2.5th and 97.5th percentiles to form the 95% CI.
+
+This provides rigorous statistical significance testing for All/Old/New categories, ensuring that performance gains are not due to random variance.
+
 ### 4. Device-Agnostic Refactoring
 Refactored hardcoded `.cuda()` calls to `.to(device)`. The codebase can now run seamlessly on both CPU (for logic testing) and GPU (for full training).
 
