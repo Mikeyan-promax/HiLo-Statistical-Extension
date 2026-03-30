@@ -20,17 +20,23 @@ To mitigate this, **I have introduced a Statistical Prior Extension based on Evi
 
 ### 1. Dirichlet Prior Integration (Subjective Logic)
 In standard classification, the network outputs logits $\mathbf{z}$, and probabilities are obtained via Softmax: $\mathbf{p} = \text{Softmax}(\mathbf{z})$.
+
 In our EDL formulation (`stat_utils.py` and `methods/ours/models/swin_pm.py`), the network outputs evidence $\mathbf{e} \ge 0$ for each of the $K$ classes. We use an activation function (e.g., Softplus) to ensure non-negativity:
+
 $$ \mathbf{e} = \text{Softplus}(\mathbf{z}) $$
 
 This evidence is then linked to the concentration parameters $\boldsymbol{\alpha}$ of a Dirichlet distribution:
+
 $$ \boldsymbol{\alpha} = \mathbf{e} + 1 $$
 
 The expected probability for class $k$ is given by:
+
 $$ \hat{p}_k = \frac{\alpha_k}{S} \quad \text{where} \quad S = \sum_{i=1}^K \alpha_i $$
 
 **Uncertainty Quantification:** The total evidence $S$ inversely relates to the second-order uncertainty $u$:
+
 $$ u = \frac{K}{S} $$
+
 When the model sees an OOD sample, the evidence $\mathbf{e}$ is close to $\mathbf{0}$, $\boldsymbol{\alpha} \approx \mathbf{1}$, $S \approx K$, and uncertainty $u \approx 1$ (maximum uncertainty).
 
 ### 2. Evidential Loss Penalty (KL Divergence)
@@ -43,6 +49,7 @@ where $\psi(\cdot)$ is the digamma function, $\mathbf{y}_i$ is the one-hot (or p
 
 ### 3. Bootstrap Confidence Intervals (CI)
 Point estimates of accuracy can be noisy, especially on novel categories. I added a Bootstrap resampling module (`methods/ours/evaluate.py`) to calculate 95% Confidence Intervals (CI).
+
 **Algorithm:**
 1. Sample $N$ predictions with replacement from the test set.
 2. Calculate the accuracy for this bootstrap sample.
