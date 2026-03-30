@@ -19,7 +19,7 @@
 ## 🎯 核心数学改进
 
 ### 1. 狄利克雷先验集成 (主观逻辑)
-在标准分类中，网络输出 logits $\mathbf{z}$，并通过 Softmax 获得概率：$$\mathbf{p} = \text{Softmax}(\mathbf{z})$$。
+在标准分类中，网络输出 logits $\mathbf{z}$，并通过 Softmax 获得概率：$\mathbf{p} = \text{Softmax}(\mathbf{z})$。
 
 在我们的 EDL 公式中 (`stat_utils.py` 和 `methods/ours/models/swin_pm.py`)，网络为 $K$ 个类别中的每一个输出证据 (evidence) $\mathbf{e} \ge 0$。我们使用激活函数（例如 Softplus）来确保非负性：
 
