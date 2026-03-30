@@ -20,17 +20,23 @@
 
 ### 1. 狄利克雷先验集成 (主观逻辑)
 在标准分类中，网络输出 logits $\mathbf{z}$，并通过 Softmax 获得概率：$\mathbf{p} = \text{Softmax}(\mathbf{z})$。
+
 在我们的 EDL 公式中 (`stat_utils.py` 和 `methods/ours/models/swin_pm.py`)，网络为 $K$ 个类别中的每一个输出证据 (evidence) $\mathbf{e} \ge 0$。我们使用激活函数（例如 Softplus）来确保非负性：
+
 $$ \mathbf{e} = \text{Softplus}(\mathbf{z}) $$
 
 然后将此证据与狄利克雷分布的浓度参数 $\boldsymbol{\alpha}$ 联系起来：
+
 $$ \boldsymbol{\alpha} = \mathbf{e} + 1 $$
 
 类别 $k$ 的期望概率由下式给出：
+
 $$ \hat{p}_k = \frac{\alpha_k}{S} \quad \text{其中} \quad S = \sum_{i=1}^K \alpha_i $$
 
 **不确定性量化：** 总证据 $S$ 与二阶不确定性 $u$ 成反比：
+
 $$ u = \frac{K}{S} $$
+
 当模型看到 OOD 样本时，证据 $\mathbf{e}$ 接近 $\mathbf{0}$，$\boldsymbol{\alpha} \approx \mathbf{1}$，$S \approx K$，不确定性 $u \approx 1$（最大不确定性）。
 
 ### 2. 证据损失惩罚 (KL 散度)
@@ -43,6 +49,7 @@ $$ \mathcal{L}_{EDL} = \sum_{i=1}^N \left[ \sum_{k=1}^K y_{ik} \left( \psi(S_i) 
 
 ### 3. Bootstrap 置信区间 (CI)
 准确率的点估计可能会有噪声，尤其是在新类别上。我添加了一个 Bootstrap 重采样模块 (`methods/ours/evaluate.py`) 来计算 95% 置信区间 (CI)。
+
 **算法：**
 1. 从测试集中有放回地抽取 $N$ 个预测样本。
 2. 计算此 bootstrap 样本的准确率。
