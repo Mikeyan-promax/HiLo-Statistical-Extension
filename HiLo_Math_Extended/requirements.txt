@@ -1,0 +1,17 @@
+# Original HiLo Requirements
+torch==1.13.1
+torchvision==0.14.1
+torchaudio==0.13.1
+timm==0.9.7
+tensorboard==2.12.1
+scipy>=1.10.1
+pandas>=2.0.0
+matplotlib>=3.7.0
+einops==0.6.1
+
+# Extended Statistical Dependencies
+scikit-learn>=1.3.0 # Required for Bootstrap Confidence Intervals
+
+# System Fallbacks (For CPU/Local Testing, Optional for GPU)
+faiss-cpu>=1.7.0
+toolz>=0.12.0
