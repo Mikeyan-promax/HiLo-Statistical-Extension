@@ -50,7 +50,11 @@ To instantly verify the mathematical correctness, tensor dimensionalities, and g
 ```bash
 python dummy_test.py
 ```
-**Expected Output:** You will see a detailed log confirming the calculation of Dirichlet Alphas, Uncertainties, EDL Loss, and Bootstrap CIs without any tensor mismatch errors.
+**Expected Output on RTX 4090:** 
+
+![Terminal Output](assets/terminal_output.png)
+
+As shown above, the script successfully calculates Dirichlet Alphas, Subjective Uncertainties, EDL Loss, and Bootstrap CIs without any tensor mismatch errors.
 
 ### Step 2: Full Dataset Training
 The training and evaluation pipelines are identical to the original HiLo project. No path changes are required if you already have the datasets configured for the original repo.
